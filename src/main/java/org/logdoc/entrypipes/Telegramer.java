@@ -1,4 +1,4 @@
-package entrypipes;
+package org.logdoc.entrypipes;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -6,11 +6,11 @@ import com.typesafe.config.Config;
 import org.logdoc.sdk.PipePlugin;
 import org.logdoc.sdk.WatcherMetrics;
 import org.logdoc.structs.LogEntry;
+import org.logdoc.utils.Httper;
 import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.libs.Json;
-import utils.Httper;
 
 import java.io.IOException;
 import java.net.URL;

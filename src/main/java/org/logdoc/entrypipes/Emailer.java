@@ -1,4 +1,4 @@
-package entrypipes;
+package org.logdoc.entrypipes;
 
 import com.sun.mail.smtp.SMTPMessage;
 import com.typesafe.config.Config;

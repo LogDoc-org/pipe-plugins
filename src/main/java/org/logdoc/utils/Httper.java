@@ -1,4 +1,4 @@
-package utils;
+package org.logdoc.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
