@@ -1,4 +1,4 @@
-package org.logdoc.utils;
+package org.logdoc.entrypipes.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;

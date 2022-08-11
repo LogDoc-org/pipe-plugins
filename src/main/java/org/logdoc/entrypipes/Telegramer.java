@@ -3,10 +3,10 @@ package org.logdoc.entrypipes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.typesafe.config.Config;
+import org.logdoc.entrypipes.utils.Httper;
 import org.logdoc.sdk.PipePlugin;
 import org.logdoc.sdk.WatcherMetrics;
 import org.logdoc.structs.LogEntry;
-import org.logdoc.utils.Httper;
 import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +56,7 @@ public class Telegramer implements PipePlugin {
             return;
         }
 
-        String b = Tools.notNull(ctx.get(BOD_NAME), "Watcher fired");
+        String b = Tools.notNull(ctx.get(BOD_NAME), "Watcher '" + watcherId + "' fired");
 
         if (getBoolean(ctx.get(ATC_NAME))) {
             if (metrics.entryCountable) {
