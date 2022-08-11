@@ -17,16 +17,11 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
-import static org.logdoc.utils.Tools.getBoolean;
-import static org.logdoc.utils.Tools.getInt;
-import static org.logdoc.utils.Tools.notNull;
+import static org.logdoc.utils.Tools.*;
 
 
 public class Emailer implements PipePlugin {
@@ -95,7 +90,7 @@ public class Emailer implements PipePlugin {
     }
 
     @Override
-    public void fire(final String watcherId, final LogEntry entry, final WatcherMetrics metrics, final Map<String, ?> ctx) throws Exception {
+    public void fire(final String watcherId, final LogEntry entry, final WatcherMetrics metrics, final Map<String, String> ctx) throws Exception {
         if (!configured.get())
             throw new Exception("Plugin is not configured");
 
@@ -134,12 +129,9 @@ public class Emailer implements PipePlugin {
         }
     }
 
-    private InternetAddress[] asEmails(final Object v) throws AddressException {
-        if (v instanceof String)
-            return new InternetAddress[]{new InternetAddress(String.valueOf(v))};
-
-        if (Collection.class.isAssignableFrom(v.getClass())) {
-            return ((Collection<?>) v).stream()
+    private InternetAddress[] asEmails(final String v) throws AddressException {
+        if (v.indexOf(',') != -1)
+            return Arrays.stream(v.split(Pattern.quote(",")))
                     .map(String::valueOf)
                     .map(s -> {
                         try {
@@ -149,8 +141,7 @@ public class Emailer implements PipePlugin {
                         }
                     })
                     .filter(Objects::nonNull).toArray(InternetAddress[]::new);
-        }
 
-        throw new AddressException("Unknown param as list of addresses: " + v);
+        return new InternetAddress[]{new InternetAddress(v)};
     }
 }

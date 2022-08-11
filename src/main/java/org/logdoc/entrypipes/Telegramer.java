@@ -17,6 +17,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -48,7 +49,7 @@ public class Telegramer implements PipePlugin {
     }
 
     @Override
-    public void fire(final String watcherId, final LogEntry entry, final WatcherMetrics metrics, final Map<String, ?> ctx) {
+    public void fire(final String watcherId, final LogEntry entry, final WatcherMetrics metrics, final Map<String, String> ctx) {
         final Collection<Long> recipients = asLongList(ctx.get(UID_NAME));
 
         if (recipients.isEmpty()) {
@@ -56,7 +57,7 @@ public class Telegramer implements PipePlugin {
             return;
         }
 
-        String b = Tools.notNull(ctx.get(BOD_NAME), "Watcher '" + watcherId + "' fired");
+        String b = Tools.notNull(ctx.get(BOD_NAME), "Watcher fired");
 
         if (getBoolean(ctx.get(ATC_NAME))) {
             if (metrics.entryCountable) {
@@ -97,16 +98,19 @@ public class Telegramer implements PipePlugin {
         }
     }
 
-    private Collection<Long> asLongList(final Object o) {
+    private Collection<Long> asLongList(final String o) {
         if (o != null)
             try {
-                if (Collection.class.isAssignableFrom(o.getClass()))
-                    return ((Collection<?>) o).stream()
+                if (o.indexOf(',') != -1)
+                    return Arrays.stream(o.split(Pattern.quote(",")))
                             .map(Tools::getLong)
                             .filter(l -> l > 0)
                             .collect(Collectors.toList());
 
-                return Collections.singletonList(getLong(o));
+                final long uid = getLong(o);
+
+                if (uid > 0)
+                    return Collections.singletonList(uid);
             } catch (final Exception ignore) {}
 
         return Collections.emptyList();
