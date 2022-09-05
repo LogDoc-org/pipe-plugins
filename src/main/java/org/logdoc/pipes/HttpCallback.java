@@ -1,15 +1,16 @@
-package org.logdoc.entrypipes;
+package org.logdoc.pipes;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.typesafe.config.Config;
-import org.logdoc.entrypipes.utils.Httper;
+import org.logdoc.pipes.utils.Httper;
 import org.logdoc.sdk.PipePlugin;
 import org.logdoc.sdk.WatcherMetrics;
 import org.logdoc.structs.LogEntry;
 import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import play.libs.Json;
 
 import java.io.OutputStream;
 import java.net.URL;
@@ -28,8 +29,13 @@ import java.util.stream.Collectors;
 
 import static org.logdoc.utils.Tools.*;
 
+/**
+ * Simple http callback invoker
+ */
 public class HttpCallback implements PipePlugin {
     private static final Logger logger = LoggerFactory.getLogger(HttpCallback.class);
+    private final ObjectMapper objectMapper = new JsonMapper();
+
     public static final String
             URL_NAME = "httpUrl",
             TMT_NAME = "httpTimeoutMs",
@@ -62,7 +68,7 @@ public class HttpCallback implements PipePlugin {
         Consumer<OutputStream> feeder = null;
 
         if (attachReport) {
-            final ObjectNode node = (ObjectNode) Json.toJson(metrics);
+            final ObjectNode node = objectMapper.valueToTree(metrics);
             node.put("server_time", ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
 
             if (!isEmpty(constants))

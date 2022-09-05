@@ -1,4 +1,4 @@
-package org.logdoc.entrypipes.utils;
+package org.logdoc.pipes.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -16,7 +16,10 @@ import java.util.zip.InflaterInputStream;
 import static org.logdoc.utils.Tools.isEmpty;
 import static org.logdoc.utils.Tools.notNull;
 
-
+/**
+ * Helper class, single-threaded url caller.
+ * Not thread safe
+ */
 public class Httper {
     private final Map<String, String> headers;
 

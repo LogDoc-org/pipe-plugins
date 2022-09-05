@@ -1,5 +1,7 @@
-package org.logdoc.entrypipes;
+package org.logdoc.pipes;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.sun.mail.smtp.SMTPMessage;
 import com.typesafe.config.Config;
 import org.logdoc.sdk.PipePlugin;
@@ -7,7 +9,6 @@ import org.logdoc.sdk.WatcherMetrics;
 import org.logdoc.structs.LogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import play.libs.Json;
 
 import javax.mail.Message;
 import javax.mail.PasswordAuthentication;
@@ -23,9 +24,13 @@ import java.util.regex.Pattern;
 
 import static org.logdoc.utils.Tools.*;
 
-
+/**
+ * SMTP sender
+ * Hoster is responsible of providing valid configuration
+ */
 public class Emailer implements PipePlugin {
     private static final Logger logger = LoggerFactory.getLogger(Emailer.class);
+    private final ObjectMapper objectMapper = new JsonMapper();
 
     private static final String
             RCPT_NAME = "emailRecipients",
@@ -117,7 +122,7 @@ public class Emailer implements PipePlugin {
                 if (metrics.cycleRepeatable)
                     b += "\nRepeats: " + metrics.cycleCounter + "/" + metrics.cycleLimit;
                 b += "\nServer time: " + ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-                b += "\nLast entry: " + Json.toJson(entry);
+                try { b += "\nLast entry: " + objectMapper.writeValueAsString(entry); } catch (final Exception ignore) { }
             }
 
             msg.setContent(b, "text/plain; charset=UTF-8");

@@ -1,16 +1,17 @@
-package org.logdoc.entrypipes;
+package org.logdoc.pipes;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.typesafe.config.Config;
-import org.logdoc.entrypipes.utils.Httper;
+import org.logdoc.pipes.utils.Httper;
 import org.logdoc.sdk.PipePlugin;
 import org.logdoc.sdk.WatcherMetrics;
 import org.logdoc.structs.LogEntry;
 import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import play.libs.Json;
 
 import java.io.IOException;
 import java.net.URL;
@@ -27,9 +28,13 @@ import java.util.stream.Collectors;
 import static org.logdoc.utils.Tools.getBoolean;
 import static org.logdoc.utils.Tools.getLong;
 
+/**
+ * Simple telegram notifier via bot API
+ */
 public class Telegramer implements PipePlugin {
     private static final Logger logger = LoggerFactory.getLogger(Telegramer.class);
-    private static final Pattern md = Pattern.compile("([!=#\\.\\(\\)\\*\\[\\]\"`'~_\\-+])");
+
+    private final ObjectMapper objectMapper = new JsonMapper();
 
     public static final String
             UID_NAME = "telegramUids",
@@ -42,7 +47,7 @@ public class Telegramer implements PipePlugin {
     public void configure(final Config config) throws Exception {
         apiUrl = new URL(config.getString("api_url"));
 
-        final JsonNode reply = Json.parse(new Httper().exec(new URL(apiUrl.toString().replace("sendMessage", "getWebhookInfo")), "GET", 1500, null, true).responseMessage);
+        final JsonNode reply = objectMapper.readTree(new Httper().exec(new URL(apiUrl.toString().replace("sendMessage", "getWebhookInfo")), "GET", 1500, null, true).responseMessage);
 
         if (!reply.get("ok").asBoolean())
             throw new Exception("API URL configuration failed: " + apiUrl);
@@ -67,13 +72,12 @@ public class Telegramer implements PipePlugin {
             if (metrics.cycleRepeatable)
                 b += "\nRepeats: " + metrics.cycleCounter + "/" + metrics.cycleLimit;
             b += "\nServer time: " + ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-            b += "\nLast entry: " + Json.toJson(entry);
+            try { b += "\nLast entry: " + objectMapper.writeValueAsString(entry); } catch (final Exception ignore) { }
         }
 
-        final ObjectNode node = Json.newObject();
-        //node.put("parse_mode", "MarkdownV2");
+        final ObjectNode node = objectMapper.createObjectNode();
         node.put("disable_web_page_preview", true);
-        node.put("text", escapeMd(b));
+        node.put("text", b);
 
         final Httper httper = new Httper();
         httper.addHeader("Content-type", "application/json");
@@ -115,9 +119,4 @@ public class Telegramer implements PipePlugin {
 
         return Collections.emptyList();
     }
-
-    public static String escapeMd(final String s) {
-        return md.matcher(s).replaceAll("\\\\$1");
-    }
-
 }
