@@ -47,10 +47,10 @@
     </developers>
 
     <scm>
-        <connection>scm:git:ssh://git@github.com/logdocpub/entrypipes.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/logdocpub/entrypipes.git</developerConnection>
+        <connection>scm:git:ssh://git@github.com/LogDoc-org/pipe-plugins.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/LogDoc-org/pipe-plugins.git</developerConnection>
         <tag>pipe-plugins-1.0.0</tag>
-        <url>https://github.com/logdocpub/entrypipes</url>
+        <url>https://github.com/LogDoc-org/pipe-plugins</url>
     </scm>
 
     <properties>
@@ -79,7 +79,7 @@
         <dependency>
             <groupId>org.logdoc</groupId>
             <artifactId>sdk</artifactId>
-            <version>1.0.3</version>
+            <version>[1.0.3,)</version>
             <scope>provided</scope>
         </dependency>
 
