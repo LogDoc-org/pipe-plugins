@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.typesafe.config.Config;
 import org.logdoc.pipes.utils.Httper;
 import org.logdoc.sdk.PipePlugin;
-import org.logdoc.sdk.WatcherMetrics;
+import org.logdoc.sdk.WatchdogFire;
 import org.logdoc.structs.LogEntry;
 import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class Telegramer implements PipePlugin {
     }
 
     @Override
-    public void fire(final String watcherId, final LogEntry entry, final WatcherMetrics metrics, final Map<String, String> ctx) {
+    public void fire(final WatchdogFire fire, final Map<String, String> ctx) {
         final Collection<Long> recipients = asLongList(ctx.get(UID_NAME));
 
         if (recipients.isEmpty()) {
@@ -62,22 +62,18 @@ public class Telegramer implements PipePlugin {
             return;
         }
 
-        String b = Tools.notNull(ctx.get(BOD_NAME), "Watcher fired");
+        final StringBuilder b = new StringBuilder(Tools.notNull(ctx.get(BOD_NAME), "Watcher fired"));
 
         if (getBoolean(ctx.get(ATC_NAME))) {
-            if (metrics.entryCountable) {
-                b += "\nEvents total: " + metrics.totalEntryCounter;
-                b += "\nEvents in current cycle: " + metrics.cycleEntryCounter + "/" + metrics.cycleEntryLimit;
-            }
-            if (metrics.cycleRepeatable)
-                b += "\nRepeats: " + metrics.cycleCounter + "/" + metrics.cycleLimit;
-            b += "\nServer time: " + ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-            try { b += "\nLast entry: " + objectMapper.writeValueAsString(entry); } catch (final Exception ignore) { }
+            b.append("\nServer time: ").append(ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
+            b.append("\nWatchdog: ").append(fire.watchdogName).append("\nMatched entries:\n");
+            for (final LogEntry entry : fire.matchedEntries)
+                try { b.append("- ").append(objectMapper.writeValueAsString(entry)).append("\n"); } catch (final Exception ignore) { }
         }
 
         final ObjectNode node = objectMapper.createObjectNode();
         node.put("disable_web_page_preview", true);
-        node.put("text", b);
+        node.put("text", b.toString());
 
         final Httper httper = new Httper();
         httper.addHeader("Content-type", "application/json");

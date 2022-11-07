@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.sun.mail.smtp.SMTPMessage;
 import com.typesafe.config.Config;
 import org.logdoc.sdk.PipePlugin;
-import org.logdoc.sdk.WatcherMetrics;
+import org.logdoc.sdk.WatchdogFire;
 import org.logdoc.structs.LogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,7 +95,7 @@ public class Emailer implements PipePlugin {
     }
 
     @Override
-    public void fire(final String watcherId, final LogEntry entry, final WatcherMetrics metrics, final Map<String, String> ctx) throws Exception {
+    public void fire(final WatchdogFire fire, final Map<String, String> ctx) throws Exception {
         if (!configured.get())
             throw new Exception("Plugin is not configured");
 
@@ -112,20 +112,16 @@ public class Emailer implements PipePlugin {
             msg.setRecipients(Message.RecipientType.TO, asEmails(ctx.get(RCPT_NAME)));
             msg.setSubject(notNull(ctx.get(SUBJ_NAME), subject));
 
-            String b = notNull(ctx.get(BODY_NAME), body);
+            final StringBuilder b = new StringBuilder(notNull(ctx.get(BODY_NAME), body));
 
             if (getBoolean(ctx.get(ATTC_NAME))) {
-                if (metrics.entryCountable) {
-                    b += "\nEvents total: " + metrics.totalEntryCounter;
-                    b += "\nEvents in current cycle: " + metrics.cycleEntryCounter + "/" + metrics.cycleEntryLimit;
-                }
-                if (metrics.cycleRepeatable)
-                    b += "\nRepeats: " + metrics.cycleCounter + "/" + metrics.cycleLimit;
-                b += "\nServer time: " + ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-                try { b += "\nLast entry: " + objectMapper.writeValueAsString(entry); } catch (final Exception ignore) { }
+                b.append("\nServer time: ").append(ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
+                b.append("\nWatchdog: ").append(fire.watchdogName).append("\nMatched entries:\n");
+                for (final LogEntry entry : fire.matchedEntries)
+                    try { b.append("- ").append(objectMapper.writeValueAsString(entry)).append("\n"); } catch (final Exception ignore) { }
             }
 
-            msg.setContent(b, "text/plain; charset=UTF-8");
+            msg.setContent(b.toString(), "text/plain; charset=UTF-8");
             msg.setSentDate(new Date());
 
             Transport.send(msg);

@@ -6,8 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.typesafe.config.Config;
 import org.logdoc.pipes.utils.Httper;
 import org.logdoc.sdk.PipePlugin;
-import org.logdoc.sdk.WatcherMetrics;
-import org.logdoc.structs.LogEntry;
+import org.logdoc.sdk.WatchdogFire;
 import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +50,7 @@ public class HttpCallback implements PipePlugin {
     public void configure(final Config config) {}
 
     @Override
-    public void fire(final String watcherId, final LogEntry entry, final WatcherMetrics metrics, final Map<String, String> ctx) throws Exception {
+    public void fire(final WatchdogFire fire, final Map<String, String> ctx) throws Exception {
         final URL url = new URL(notNull(ctx.get(URL_NAME)));
         final String method = notNull(ctx.get(MET_NAME), "GET").toUpperCase();
         final boolean attachReport = getBoolean(ctx.get(ATC_NAME));
@@ -68,7 +67,7 @@ public class HttpCallback implements PipePlugin {
         Consumer<OutputStream> feeder = null;
 
         if (attachReport) {
-            final ObjectNode node = objectMapper.valueToTree(metrics);
+            final ObjectNode node = objectMapper.valueToTree(fire);
             node.put("server_time", ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
 
             if (!isEmpty(constants))
