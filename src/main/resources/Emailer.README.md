@@ -6,17 +6,24 @@
 ```hocon
 logdoc.plugins.pipes.org.logdoc.pipes.Emailer {
   sender {
-    email = "email@logdoc.com"
+    email = "email@logdoc.org"
     name = "Auto Sender"
   }
 
   smtp {
-    ssl = true
-    tls = true
     host = "host.com"
     port = 695
+    timeout = 3000 // опционально. дефолт - 3000
 
-    auth {
+    ssl = true // дефолт - false
+    ssl { // опционально
+      factory = "javax.net.ssl.SSLSocketFactory" // опционально. дефолт -- SSLSocketFactory
+      
+      tls = true // дефолт - false
+      tls.protocols = "TLSv1.2,TLSv1.3" // опционально. дефолт - TLSv1.2
+    }
+    
+    auth { // опционально
       user = "user"
       password = "password"
     }

@@ -47,7 +47,7 @@ public class HttpCallback implements PipePlugin {
     }
 
     @Override
-    public void configure(final Config config) {}
+    public boolean configure(final Config config) { return true; }
 
     @Override
     public void fire(final WatchdogFire fire, final Map<String, String> ctx) throws Exception {

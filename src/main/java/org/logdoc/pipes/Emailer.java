@@ -16,10 +16,10 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import javax.net.ssl.SSLSocketFactory;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import static org.logdoc.utils.Tools.*;
@@ -32,81 +32,102 @@ public class Emailer implements PipePlugin {
     private static final Logger logger = LoggerFactory.getLogger(Emailer.class);
     private final ObjectMapper objectMapper = new JsonMapper();
 
-    private static final String
-            RCPT_NAME = "emailRecipients",
-            BODY_NAME = "emailBody",
-            SUBJ_NAME = "emailSubject",
-            ATTC_NAME = "emailReport";
+    private static final String RCPT_NAME = "emailRecipients", BODY_NAME = "emailBody", SUBJ_NAME = "emailSubject", ATTC_NAME = "emailReport";
 
     private final Properties props;
-    private final AtomicBoolean configured;
     private InternetAddress addressFrom;
     private String smtpUser, smtpPassword, subject, body;
+    private boolean auth;
 
     public Emailer() {
         props = new Properties();
-        configured = new AtomicBoolean(false);
         subject = "";
         body = "";
     }
 
     @Override
-    public void configure(final Config config) throws Exception {
-        if (configured.get() || config == null || config.isEmpty())
-            return;
+    public boolean configure(final Config cfg) throws Exception {
+        if (cfg == null || cfg.isEmpty()) return false;
 
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.host", config.getString("smtp.host"));
-        props.put("mail.smtp.port", config.getString("smtp.port"));
-        props.put("mail.smtp.timeout", "1500");
-        props.put("mail.smtp.connectiontimeout", "1500");
-        if (config.getBoolean("smtp.ssl")) {
+        if (!cfg.hasPath("smtp")) return false;
+
+        final Config smtpConf = cfg.getConfig("smtp");
+        if (!smtpConf.hasPath("host") || !smtpConf.hasPath("port")) return false;
+
+        props.put("mail.smtp.host", smtpConf.getString("host"));
+        props.put("mail.smtp.port", smtpConf.getString("port"));
+
+        int timeout = 3000;
+        if (smtpConf.hasPath("timeout")) timeout = smtpConf.getInt("timeout");
+
+        props.put("mail.smtp.timeout", String.valueOf(timeout));
+        props.put("mail.smtp.connectiontimeout", String.valueOf(timeout));
+
+        if (smtpConf.hasPath("ssl") && smtpConf.getBoolean("ssl")) {
             props.put("mail.smtp.ssl.enable", "true");
-            props.put("mail.smtps.timeout", "1500");
-            props.put("mail.smtps.connectiontimeout", "1500");
-            props.put("mail.smtp.socketFactory.port", config.getString("smtp.port"));
-            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.put("mail.smtp.socketFactory.fallback", "false");
+            props.put("mail.smtps.timeout", String.valueOf(timeout));
+            props.put("mail.smtps.connectiontimeout", String.valueOf(timeout));
+            props.put("mail.smtp.socketFactory.port", smtpConf.getString("port"));
+
+            String factory = SSLSocketFactory.class.getName();
+
+            if (smtpConf.hasPath("ssl.factory")) factory = smtpConf.getString("ssl.factory");
+
+            props.put("mail.smtp.socketFactory.class", factory);
+
+            if (smtpConf.hasPath("ssl.tls") && smtpConf.getBoolean("ssl.tls")) {
+                props.put("mail.smtp.starttls.enable", "true");
+
+                String protocols = "TLSv1.2";
+
+                if (smtpConf.hasPath("ssl.tls.protocols")) protocols = smtpConf.getString("ssl.tls.protocols");
+
+                props.put("mail.smtp.ssl.protocols", protocols);
+            } else props.put("mail.smtp.starttls.enable", "false");
+        } else props.put("mail.smtp.ssl.enable", "true");
+
+
+        final Config authConf = smtpConf.hasPath("auth") ? smtpConf.getConfig("auth") : null;
+
+        if ((auth = authConf != null)) {
+            smtpUser = authConf.getString("user");
+            smtpPassword = authConf.hasPath("password") ? authConf.getString("password") : "";
+
+            props.put("mail.smtp.auth", "true");
         }
 
-        if (config.getBoolean("smtp.tls")) {
-            props.put("mail.smtp.ssl.protocols", "TLSv1.2");
-        }
+        subject = cfg.hasPath("default_subject") ? cfg.getString("default_subject") : "Logdoc notification";
+        body = cfg.hasPath("default_body") ? cfg.getString("default_body") : "Logdoc notification";
 
-        smtpUser = config.getString("smtp.auth.user");
-        smtpPassword = config.getString("smtp.auth.password");
-        subject = config.hasPath("default_subject") ? config.getString("default_subject") : "Logdoc notification";
-        body = config.hasPath("default_body") ? config.getString("default_body") : "Logdoc notification";
+        if (!cfg.hasPath("sender.email") || !cfg.hasPath("sender.name")) return false;
 
-        addressFrom = new InternetAddress(config.getString("sender.email"), config.getString("sender.name"));
+        addressFrom = new InternetAddress(cfg.getString("sender.email"), cfg.getString("sender.name"));
 
         try {
             final Transport transport = Session.getInstance(props, null).getTransport("smtp");
             transport.connect(String.valueOf(props.get("mail.smtp.host")), getInt(props.get("mail.smtp.port")), smtpUser, smtpPassword);
             transport.close();
         } catch (final Exception e) {
-            if (config.getBoolean("smtp.debug")) {
-                throw new Exception("SMTP is not configured or credentials are wrong: " + props + " :: " + smtpUser + " :: " + e.getMessage(), e);
-            } else
-                throw new Exception("SMTP is not configured or credentials are wrong: " + props + " :: " + smtpUser + " :: " + e.getMessage());
+            logger.debug(e.getMessage(), e);
+
+            return false;
         }
 
-        configured.set(true);
+        return true;
     }
 
     @Override
-    public void fire(final WatchdogFire fire, final Map<String, String> ctx) throws Exception {
-        if (!configured.get())
-            throw new Exception("Plugin is not configured");
-
+    public void fire(final WatchdogFire fire, final Map<String, String> ctx) {
         try {
-            final Session session = Session.getDefaultInstance(props, new javax.mail.Authenticator() {
+            final Session session = auth ? Session.getDefaultInstance(props, new javax.mail.Authenticator() {
                 protected PasswordAuthentication getPasswordAuthentication() {
                     return new PasswordAuthentication(smtpUser, smtpPassword);
                 }
-            });
+            }) : Session.getDefaultInstance(props);
 
             session.setDebug(false);
+
             final Message msg = new SMTPMessage(session);
             msg.setFrom(addressFrom);
             msg.setRecipients(Message.RecipientType.TO, asEmails(ctx.get(RCPT_NAME)));
@@ -118,7 +139,7 @@ public class Emailer implements PipePlugin {
                 b.append("\nServer time: ").append(ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
                 b.append("\nWatchdog: ").append(fire.watchdogName).append("\nMatched entries:\n");
                 for (final LogEntry entry : fire.matchedEntries)
-                    try { b.append("- ").append(objectMapper.writeValueAsString(entry)).append("\n"); } catch (final Exception ignore) { }
+                    try {b.append("- ").append(objectMapper.writeValueAsString(entry)).append("\n");} catch (final Exception ignore) {}
             }
 
             msg.setContent(b.toString(), "text/plain; charset=UTF-8");
@@ -131,17 +152,13 @@ public class Emailer implements PipePlugin {
     }
 
     private InternetAddress[] asEmails(final String v) throws AddressException {
-        if (v.indexOf(',') != -1)
-            return Arrays.stream(v.split(Pattern.quote(",")))
-                    .map(String::valueOf)
-                    .map(s -> {
-                        try {
-                            return new InternetAddress(s);
-                        } catch (final Exception e) {
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull).toArray(InternetAddress[]::new);
+        if (v.indexOf(',') != -1) return Arrays.stream(v.split(Pattern.quote(","))).map(String::valueOf).map(s -> {
+            try {
+                return new InternetAddress(s);
+            } catch (final Exception e) {
+                return null;
+            }
+        }).filter(Objects::nonNull).toArray(InternetAddress[]::new);
 
         return new InternetAddress[]{new InternetAddress(v)};
     }

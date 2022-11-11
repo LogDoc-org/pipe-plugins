@@ -44,13 +44,24 @@ public class Telegramer implements PipePlugin {
     private URL apiUrl;
 
     @Override
-    public void configure(final Config config) throws Exception {
-        apiUrl = new URL(config.getString("api_url"));
+    public boolean configure(final Config config) {
+        if (config == null || config.isEmpty())
+            return false;
 
-        final JsonNode reply = objectMapper.readTree(new Httper().exec(new URL(apiUrl.toString().replace("sendMessage", "getWebhookInfo")), "GET", 1500, null, true).responseMessage);
+        try {
+            apiUrl = new URL(config.getString("api_url"));
 
-        if (!reply.get("ok").asBoolean())
-            throw new Exception("API URL configuration failed: " + apiUrl);
+            final JsonNode reply = objectMapper.readTree(new Httper().exec(new URL(apiUrl.toString().replace("sendMessage", "getWebhookInfo")), "GET", 1500, null, true).responseMessage);
+
+            if (!reply.get("ok").asBoolean())
+                throw new Exception("API URL configuration failed: " + apiUrl);
+
+            return true;
+        } catch (final Exception e) {
+            logger.debug(e.getMessage(), e);
+        }
+
+        return false;
     }
 
     @Override
