@@ -22,7 +22,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static org.logdoc.utils.Tools.*;
+import static org.logdoc.helpers.Digits.getInt;
+import static org.logdoc.helpers.Texts.getBoolean;
+import static org.logdoc.helpers.Texts.notNull;
 
 /**
  * SMTP sender

@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.typesafe.config.Config;
+import org.logdoc.helpers.Texts;
 import org.logdoc.pipes.utils.Httper;
 import org.logdoc.sdk.PipePlugin;
 import org.logdoc.sdk.WatchdogFire;
-import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,8 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.logdoc.utils.Tools.*;
+import static org.logdoc.helpers.Digits.getLong;
+import static org.logdoc.helpers.Texts.*;
 
 /**
  * Simple http callback invoker
@@ -101,7 +102,7 @@ public class HttpCallback implements PipePlugin {
             try {
                 if (v.indexOf(separator) != -1)
                     return Arrays.stream(v.split(Pattern.quote(String.valueOf(separator))))
-                            .map(Tools::notNull)
+                            .map(Texts::notNull)
                             .filter(s -> !isEmpty(s))
                             .filter(s -> s.indexOf('=') != -1)
                             .map(s -> {

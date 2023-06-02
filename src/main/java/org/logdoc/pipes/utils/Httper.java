@@ -13,8 +13,8 @@ import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
-import static org.logdoc.utils.Tools.isEmpty;
-import static org.logdoc.utils.Tools.notNull;
+import static org.logdoc.helpers.Texts.isEmpty;
+import static org.logdoc.helpers.Texts.notNull;
 
 /**
  * Helper class, single-threaded url caller.

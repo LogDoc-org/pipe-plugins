@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.typesafe.config.Config;
+import org.logdoc.helpers.Digits;
 import org.logdoc.pipes.utils.Httper;
 import org.logdoc.sdk.PipePlugin;
 import org.logdoc.sdk.WatchdogFire;
 import org.logdoc.structs.LogEntry;
-import org.logdoc.utils.Tools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +25,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.logdoc.utils.Tools.getBoolean;
-import static org.logdoc.utils.Tools.getLong;
+import static org.logdoc.helpers.Digits.getLong;
+import static org.logdoc.helpers.Texts.getBoolean;
+import static org.logdoc.helpers.Texts.notNull;
 
 /**
  * Simple telegram notifier via bot API
@@ -73,7 +74,7 @@ public class Telegramer implements PipePlugin {
             return;
         }
 
-        final StringBuilder b = new StringBuilder(Tools.notNull(ctx.get(BOD_NAME), "Watcher fired"));
+        final StringBuilder b = new StringBuilder(notNull(ctx.get(BOD_NAME), "Watcher fired"));
 
         if (getBoolean(ctx.get(ATC_NAME))) {
             b.append("\nServer time: ").append(ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME));
@@ -114,7 +115,7 @@ public class Telegramer implements PipePlugin {
             try {
                 if (o.indexOf(',') != -1)
                     return Arrays.stream(o.split(Pattern.quote(",")))
-                            .map(Tools::getLong)
+                            .map(Digits::getLong)
                             .filter(l -> l > 0)
                             .collect(Collectors.toList());
 
