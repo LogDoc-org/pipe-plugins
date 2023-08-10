@@ -67,14 +67,13 @@ public class Kafker implements PipePlugin {
 
     @Override
     public boolean configure(final Config config) {
-        if (configured.get() || config == null || config.isEmpty())
-            return false;
+        if (configured.compareAndSet(false, true)) {
+            protoProps.put("key.serializer", StringSerializer.class.getName());
+            protoProps.put("value.serializer", StringSerializer.class.getName());
+            protoProps.put("key.deserializer", StringDeserializer.class.getName());
+            protoProps.put("value.deserializer", StringDeserializer.class.getName());
+        }
 
-        protoProps.put("key.serializer", StringSerializer.class.getName());
-        protoProps.put("value.serializer", StringSerializer.class.getName());
-        protoProps.put("key.deserializer", StringDeserializer.class.getName());
-        protoProps.put("value.deserializer", StringDeserializer.class.getName());
-
-        return configured.compareAndSet(false, true);
+        return true;
     }
 }
