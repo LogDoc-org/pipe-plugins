@@ -136,6 +136,7 @@
                 </property>
             </activation>
             <build>
+                <finalName>pipe-plugins-latest.jar</finalName>
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
