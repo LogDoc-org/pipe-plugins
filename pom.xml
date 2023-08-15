@@ -4,7 +4,7 @@
 
     <groupId>org.logdoc</groupId>
     <artifactId>pipe-plugins</artifactId>
-    <version>1.0.9-SNAPSHOT</version>
+    <version>1.0.9</version>
 
     <packaging>jar</packaging>
     <build>
@@ -54,7 +54,7 @@
     <scm>
         <connection>scm:git:ssh://git@github.com/LogDoc-org/pipe-plugins.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/LogDoc-org/pipe-plugins.git</developerConnection>
-        <tag>pipe-plugins-1.0.1</tag>
+        <tag>pipe-plugins-1.0.9</tag>
         <url>https://github.com/LogDoc-org/pipe-plugins</url>
     </scm>
 
