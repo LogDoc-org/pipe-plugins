@@ -51,10 +51,10 @@ public class Emailer implements PipePlugin {
     public boolean configure(final Config cfg) throws Exception {
         if (cfg == null || cfg.isEmpty()) return false;
 
-        if (!cfg.hasPath("smtp")) return false;
+        if (!cfg.hasPath("smtp")) throw new IllegalStateException("No smtp config provided");
 
         final Config smtpConf = cfg.getConfig("smtp");
-        if (!smtpConf.hasPath("host") || !smtpConf.hasPath("port")) return false;
+        if (!smtpConf.hasPath("host") || !smtpConf.hasPath("port")) throw new IllegalStateException("No smtp host config provided");
 
         props.put("mail.smtp.host", smtpConf.getString("host"));
         props.put("mail.smtp.port", smtpConf.getString("port"));
@@ -65,12 +65,14 @@ public class Emailer implements PipePlugin {
         props.put("mail.smtp.timeout", String.valueOf(timeout));
         props.put("mail.smtp.connectiontimeout", String.valueOf(timeout));
 
-        if (smtpConf.hasPath("ssl") && smtpConf.getBoolean("ssl")) {
+        if (smtpConf.hasPath("ssl_enabled") && smtpConf.getBoolean("ssl_enabled")) {
             props.put("mail.smtp.ssl.enable", "true");
             props.put("mail.smtp.socketFactory.fallback", "false");
             props.put("mail.smtps.timeout", String.valueOf(timeout));
             props.put("mail.smtps.connectiontimeout", String.valueOf(timeout));
             props.put("mail.smtp.socketFactory.port", smtpConf.getString("port"));
+            props.put("mail.smtp.ssl.trust", smtpConf.getString("host"));
+            props.put("mail.smtps.ssl.trust", smtpConf.getString("host"));
 
             String factory = SSLSocketFactory.class.getName();
 
@@ -78,26 +80,28 @@ public class Emailer implements PipePlugin {
 
             props.put("mail.smtp.socketFactory.class", factory);
 
-            if (smtpConf.hasPath("ssl.tls") && smtpConf.getBoolean("ssl.tls")) {
-                props.put("mail.smtp.starttls.enable", "true");
-
-                String protocols = "TLSv1.2";
-
-                if (smtpConf.hasPath("ssl.tls.protocols")) protocols = smtpConf.getString("ssl.tls.protocols");
-
-                props.put("mail.smtp.ssl.protocols", protocols);
-            } else props.put("mail.smtp.starttls.enable", "false");
         } else props.put("mail.smtp.ssl.enable", "true");
+
+        if (smtpConf.hasPath("ssl.tls_enabled") && smtpConf.getBoolean("ssl.tls_enabled")) {
+            props.put("mail.smtp.starttls.enable", "true");
+
+            String protocols = "TLSv1.2";
+
+            if (smtpConf.hasPath("ssl.tls.protocols")) protocols = smtpConf.getString("ssl.tls.protocols");
+
+            props.put("mail.smtp.ssl.protocols", protocols);
+        } else props.put("mail.smtp.starttls.enable", "false");
 
 
         final Config authConf = smtpConf.hasPath("auth") ? smtpConf.getConfig("auth") : null;
 
-        if ((auth = authConf != null)) {
+        if ((auth = (authConf != null))) {
             smtpUser = authConf.getString("user");
             smtpPassword = authConf.hasPath("password") ? authConf.getString("password") : "";
 
             props.put("mail.smtp.auth", "true");
         }
+
 
         subject = cfg.hasPath("default_subject") ? cfg.getString("default_subject") : "Logdoc notification";
         body = cfg.hasPath("default_body") ? cfg.getString("default_body") : "Logdoc notification";

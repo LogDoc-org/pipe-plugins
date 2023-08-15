@@ -6,7 +6,7 @@
 
 Для успешной работы в основном конфиге logdoc должна присутствовать следующая секция с обязательными параметрами:
 ```hocon
-logdoc.plugins.pipes.org.logdoc.pipes.Emailer {
+org.logdoc.pipes.Emailer {
   sender {
     email = "email@logdoc.org"
     name = "Auto Sender"
