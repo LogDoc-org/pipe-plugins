@@ -17,11 +17,11 @@ org.logdoc.pipes.Emailer {
     port = 695
     timeout = 3000 // опционально. дефолт - 3000
 
-    ssl = true // дефолт - false
+    ssl_enabled = true // дефолт - false
     ssl { // опционально
       factory = "javax.net.ssl.SSLSocketFactory" // опционально. дефолт -- SSLSocketFactory
       
-      tls = true // дефолт - false
+      tls_enabled = true // дефолт - false
       tls.protocols = "TLSv1.2,TLSv1.3" // опционально. дефолт - TLSv1.2
     }
     
